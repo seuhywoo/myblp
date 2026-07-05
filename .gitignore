@@ -1,0 +1,13 @@
+# macOS
+.DS_Store
+
+# MATLAB auto-generated files
+*.asv
+*.m~
+
+# Python
+__pycache__/
+*.pyc
+
+# local archive (not part of the template)
+archive/
