@@ -58,9 +58,9 @@ These match the PyBLP tutorial replication of Nevo (2000).
 Consumer $i$'s indirect utility from product $j$ in market $t$ (a city–quarter pair):
 
 $$
-u_{ijt} \;=\; \underbrace{x_{jt}'\beta \;+\; \xi_{jt}}_{\displaystyle \delta_{jt}\ \text{(mean utility)}}
-\;+\; \underbrace{\textstyle\sum_{k}\, x^{(2)}_{jt,k}\left(\sigma_k\,\nu_{ik} + \pi_k' D_i\right)}_{\displaystyle \mu_{ijt}\ \text{(individual deviation)}}
-\;+\; \varepsilon_{ijt}
+u_{ijt} = \underbrace{x_{jt}'\beta + \xi_{jt}}_{\delta_{jt}\ \text{(mean utility)}}
++ \underbrace{\sum_{k} x^{(2)}_{jt,k}\left(\sigma_k \nu_{ik} + \pi_k' D_i\right)}_{\mu_{ijt}\ \text{(individual deviation)}}
++ \varepsilon_{ijt}
 $$
 
 where $\varepsilon_{ijt}$ is i.i.d. type-I extreme value and the outside
@@ -124,9 +124,9 @@ Predicted share of product $j$ in market $t$, integrating over the $S$
 simulated consumers:
 
 $$
-s_{jt}(\delta_t;\theta_2) \;=\; \frac{1}{S}\sum_{i=1}^{S}
-\frac{\exp\!\left(\delta_{jt} + \mu_{ijt}\right)}
-     {1 + \sum_{k \in \mathcal{J}_t} \exp\!\left(\delta_{kt} + \mu_{ikt}\right)}
+s_{jt}(\delta_t;\theta_2) = \frac{1}{S}\sum_{i=1}^{S}
+\frac{\exp\left(\delta_{jt} + \mu_{ijt}\right)}
+     {1 + \sum_{k \in \mathcal{J}_t} \exp\left(\delta_{kt} + \mu_{ikt}\right)}
 $$
 
 Given $\theta_2$, the mean utilities solve
@@ -134,20 +134,20 @@ $s_{jt}(\delta_t;\theta_2) = s_{jt}^{\text{obs}}$ via the BLP contraction
 (`mean_utility.m`), iterated in exp space until convergence:
 
 $$
-\exp\!\left(\delta^{(r+1)}\right) \;=\;
-\exp\!\left(\delta^{(r)}\right)\cdot
-\frac{s^{\text{obs}}}{s\!\left(\delta^{(r)};\theta_2\right)}
+\exp\left(\delta^{(r+1)}\right) =
+\exp\left(\delta^{(r)}\right)\cdot
+\frac{s^{\text{obs}}}{s\left(\delta^{(r)};\theta_2\right)}
 $$
 
 ### GMM estimation (nested fixed point)
 
 The structural error is recovered as
 $\xi_{jt}(\theta_2) = \delta_{jt}(\theta_2) - x^{(1)\prime}_{jt}\theta_1(\theta_2)$,
-and estimation exploits the moment condition $E[Z_{jt}'\,\xi_{jt}] = 0$:
+and estimation exploits the moment condition $E[Z_{jt}' \xi_{jt}] = 0$:
 
 $$
-\hat\theta_2 \;=\; \arg\min_{\theta_2}\;
-\frac{1}{N}\,\xi(\theta_2)'\,Z\,W\,Z'\,\xi(\theta_2),
+\hat\theta_2 = \arg\min_{\theta_2}
+\frac{1}{N}\ \xi(\theta_2)' Z W Z' \xi(\theta_2),
 \qquad W = (Z'Z)^{-1}
 $$
 
