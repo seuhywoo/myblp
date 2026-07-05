@@ -53,39 +53,109 @@ These match the PyBLP tutorial replication of Nevo (2000).
 
 ## Model
 
-Utility of consumer *i* for product *j* in market *t*:
+### Utility
 
-    u_ijt = x_jt·beta_i + xi_jt + eps_ijt
+Consumer $i$'s indirect utility from product $j$ in market $t$ (a city–quarter pair):
 
-- **X1 (linear):** price + brand fixed effects
-  (constant, sugar and mushy are absorbed by the FEs)
-- **X2 (random coefficients):** [1, price, sugar, mushy] — draws `nodes0`–`nodes3`
-- **Demographic interactions** (Nevo's Table I pattern):
+$$
+u_{ijt} \;=\; \underbrace{x_{jt}'\beta \;+\; \xi_{jt}}_{\displaystyle \delta_{jt}\ \text{(mean utility)}}
+\;+\; \underbrace{\textstyle\sum_{k}\, x^{(2)}_{jt,k}\left(\sigma_k\,\nu_{ik} + \pi_k' D_i\right)}_{\displaystyle \mu_{ijt}\ \text{(individual deviation)}}
+\;+\; \varepsilon_{ijt}
+$$
 
-  | X2 characteristic | Interacted demographics |
-  |---|---|
-  | constant | income, age |
-  | price | income, income², child |
-  | sugar | income, age |
-  | mushy | income, age |
+where $\varepsilon_{ijt}$ is i.i.d. type-I extreme value and the outside
+good is normalized to $u_{i0t} = \varepsilon_{i0t}$. Each random
+coefficient decomposes as
+$\beta_{ik} = \beta_k + \sigma_k \nu_{ik} + \pi_k' D_i$: the mean $\beta_k$
+lives in $\delta_{jt}$, the deviations in $\mu_{ijt}$.
 
-  Income² enters price only and age never interacts with price — this
-  breaks the income/income² collinearity (corr ≈ 0.995) that makes an
-  all-on-price specification weakly identified.
+### Notation
 
-- **Sign convention (PyBLP):** μ_ijt = +(π·D_i + σ·ν_i)·x_jt, so parameters
-  compare to PyBLP output directly, with no sign flips.
-- **theta2 (13×1):** `[sigma_c, pi_c_inc, pi_c_age, sigma_p, pi_p_inc,
-  pi_p_incSq, pi_p_child, sigma_s, pi_s_inc, pi_s_age, sigma_m, pi_m_inc,
-  pi_m_age]`
+| Symbol | Meaning | In the code |
+|---|---|---|
+| $j = 1,\dots,24$ | products (cereal brands) | `product_id` |
+| $t = 1,\dots,94$ | markets (city × quarter) | `mktIdx` |
+| $i = 1,\dots,20$ | simulated consumers per market | `S`, `const.n_sim` |
+| $x_{jt}$ | observed product characteristics (price, sugar, mushy, const) | `prod` columns |
+| $x^{(1)}_{jt}$ | linear characteristics: price + brand FE | `x1` |
+| $x^{(2)}_{jt}$ | RC characteristics: $[1,\ p_{jt},\ \text{sugar},\ \text{mushy}]$ | `x2` (+ const) |
+| $\xi_{jt}$ | unobserved demand shock, correlated with price → IV needed | `xi` |
+| $s_{jt}$ | observed market share | `data.share` |
+| $\delta_{jt}$ | mean utility, common across consumers | `deltaHat` |
+| $\mu_{ijt}$ | individual utility deviation | `nlin_mu.m` |
+| $\nu_{ik}$ | standard-normal RC draws (one per $x^{(2)}$ char) | `nodes0`–`nodes3` |
+| $D_i$ | demographics: income, income², age, child | agent columns |
+| $\theta_1 = (\alpha,\ \text{brand FE})$ | linear parameters (25×1), recovered by 2SLS | `theta1Hat` |
+| $\theta_2 = (\sigma,\ \pi)$ | nonlinear parameters (13×1), searched by `fminsearch` | `theta2Hat` |
+| $Z$ | instruments: const + brand FE + 20 excluded IVs (44 cols) | `Z` |
+| $W$ | GMM weight matrix $(Z'Z)^{-1}$ | `data.invW` |
 
-### Estimation
+**Sign convention (PyBLP):** $\mu_{ijt} = +(\pi'D_i + \sigma\nu_i)\cdot x_{jt}$,
+so parameters compare to PyBLP output directly, with no sign flips.
 
-Nested fixed point: the outer loop (`fminsearch`) searches over theta2;
-for each candidate, the inner loop (`mean_utility`) inverts market shares
-via the BLP contraction, theta1 is concentrated out by 2SLS, and the GMM
-objective is evaluated on ξ = δ − X1·theta1. A 2-step efficient GMM
-skeleton is included (Section 14, commented out).
+### Random-coefficient specification
+
+$X^{(2)} = [1,\ p_{jt},\ \text{sugar},\ \text{mushy}]$, each with its own
+$\sigma_k$; demographics interact following Nevo's Table I pattern:
+
+| $X^{(2)}$ characteristic | $\sigma$ | Interacted demographics ($\pi$) |
+|---|---|---|
+| constant | $\sigma_c$ | income, age |
+| price | $\sigma_p$ | income, income², child |
+| sugar | $\sigma_s$ | income, age |
+| mushy | $\sigma_m$ | income, age |
+
+Income² enters price only and age never interacts with price — this
+breaks the income/income² collinearity (corr ≈ 0.995) that makes an
+all-on-price specification weakly identified.
+
+Parameter vector (order used throughout the code):
+
+```
+theta2 = [sigma_c, pi_c_inc, pi_c_age,                          % constant
+          sigma_p, pi_p_inc, pi_p_incSq, pi_p_child,            % price
+          sigma_s, pi_s_inc, pi_s_age,                          % sugar
+          sigma_m, pi_m_inc, pi_m_age]                          % mushy
+```
+
+### Market shares and inversion
+
+Predicted share of product $j$ in market $t$, integrating over the $S$
+simulated consumers:
+
+$$
+s_{jt}(\delta_t;\theta_2) \;=\; \frac{1}{S}\sum_{i=1}^{S}
+\frac{\exp\!\left(\delta_{jt} + \mu_{ijt}\right)}
+     {1 + \sum_{k \in \mathcal{J}_t} \exp\!\left(\delta_{kt} + \mu_{ikt}\right)}
+$$
+
+Given $\theta_2$, the mean utilities solve
+$s_{jt}(\delta_t;\theta_2) = s_{jt}^{\text{obs}}$ via the BLP contraction
+(`mean_utility.m`), iterated in exp space until convergence:
+
+$$
+\exp\!\left(\delta^{(r+1)}\right) \;=\;
+\exp\!\left(\delta^{(r)}\right)\cdot
+\frac{s^{\text{obs}}}{s\!\left(\delta^{(r)};\theta_2\right)}
+$$
+
+### GMM estimation (nested fixed point)
+
+The structural error is recovered as
+$\xi_{jt}(\theta_2) = \delta_{jt}(\theta_2) - x^{(1)\prime}_{jt}\theta_1(\theta_2)$,
+and estimation exploits the moment condition $E[Z_{jt}'\,\xi_{jt}] = 0$:
+
+$$
+\hat\theta_2 \;=\; \arg\min_{\theta_2}\;
+\frac{1}{N}\,\xi(\theta_2)'\,Z\,W\,Z'\,\xi(\theta_2),
+\qquad W = (Z'Z)^{-1}
+$$
+
+The outer loop (`fminsearch`) searches over $\theta_2$; for each candidate,
+the inner loop (`mean_utility`) inverts market shares, and $\theta_1$ is
+concentrated out by 2SLS of $\delta$ on $x^{(1)}$ (price instrumented by
+the 20 excluded IVs). A 2-step efficient GMM skeleton with
+$W = (Z'\hat\xi\hat\xi'Z)^{-1}$ is included (Section 14, commented out).
 
 ### Post-estimation
 
