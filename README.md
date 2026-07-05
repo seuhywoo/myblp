@@ -58,14 +58,29 @@ These match the PyBLP tutorial replication of Nevo (2000).
 Consumer $i$'s indirect utility from product $j$ in market $t$ (a city–quarter pair):
 
 ```math
-u_{ijt} = \underbrace{x_{jt}'\beta + \xi_{jt}}_{\delta_{jt}\ \text{(mean utility)}} + \underbrace{\sum_{k} x^{(2)}_{jt,k}\left(\sigma_k \nu_{ik} + \pi_k' D_i\right)}_{\mu_{ijt}\ \text{(individual deviation)}} + \varepsilon_{ijt}
+u_{ijt} = \underbrace{x^{(1)\prime}_{jt}\theta_1 + \xi_{jt}}_{\delta_{jt}\ \text{(mean utility)}} + \underbrace{\sum_{k} x^{(2)}_{jt,k}\left(\sigma_k \nu_{ik} + \pi_k' D_i\right)}_{\mu_{ijt}\ \text{(individual deviation)}} + \varepsilon_{ijt}
 ```
 
 where $\varepsilon_{ijt}$ is i.i.d. type-I extreme value and the outside
 good is normalized to $u_{i0t} = \varepsilon_{i0t}$. Each random
 coefficient decomposes as
 $\beta_{ik} = \beta_k + \sigma_k \nu_{ik} + \pi_k' D_i$: the mean $\beta_k$
-lives in $\delta_{jt}$, the deviations in $\mu_{ijt}$.
+lives in $\delta_{jt}$ (for sugar, mushy and the constant, absorbed by the
+brand fixed effects inside $x^{(1)}_{jt}$), the deviations in $\mu_{ijt}$.
+
+Because sugar, mushy and the constant do not vary within a brand, they are
+perfectly collinear with the brand fixed effects: each estimated FE absorbs
+their mean tastes together with the brand's average unobserved quality
+$\bar{\xi}_j$,
+
+```math
+\mathrm{FE}_j = \beta_0 + \beta_s \text{ sugar}_j + \beta_m \text{ mushy}_j + \bar{\xi}_j
+```
+
+The means $(\beta_0, \beta_s, \beta_m)$ can be recovered after estimation
+by Chamberlain minimum distance — GLS of the estimated FEs on the brand
+characteristics, weighted by the inverse covariance of the FE estimates
+(planned extension; requires the full GMM covariance of the FEs).
 
 ### Notation
 

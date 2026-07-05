@@ -3,7 +3,8 @@ function res = tsls_est(Y, X, Z)
 %   Column 2 of X is treated as endogenous.
 %   Z contains exogenous regressors + excluded instruments.
 %
-% res.beta, res.se, res.alpha (price coeff), res.se_alpha, res.first_F
+% res.beta, res.se, res.V (robust vcov), res.alpha (price coeff),
+% res.se_alpha, res.first_F
 
     ZtZ  = Z' * Z;
     Xhat = Z * (ZtZ \ (Z' * X));   % [N x k]  first-stage fitted values
@@ -16,6 +17,7 @@ function res = tsls_est(Y, X, Z)
 
     res.beta     = b;
     res.se       = sqrt(diag(V));
+    res.V        = V;
     res.alpha    = b(2);
     res.se_alpha = res.se(2);
 
